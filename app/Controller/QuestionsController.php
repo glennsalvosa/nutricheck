@@ -172,6 +172,7 @@ class QuestionsController extends AppController {
 		
 		$this->loadModel('PerformedCheck');
 		$this->loadModel('SelectedAnswerLog');
+		$this->loadModel('SelectedFactorLog');
 		
 		$user_info = $this->Session->read('Auth.User');
 		$behalfUserId = $this->Session->read('behalfUserId');
@@ -238,7 +239,7 @@ class QuestionsController extends AppController {
 				$behalfUserId = $this->Session->read('behalfUserId');
 				if(empty($this->request->data['Factors']['factors'])) {
 					$this->Session->setFlash(__("You didn't select a functional disturbance"));
-				} else {				
+				} else {
 					$factor_ids = implode(",", $this->request->data['Factors']['factors']);
 					$selected_factors = $this->request->data['Factors']['factors'];
 					$this->set('selected_factors', $selected_factors);
@@ -246,6 +247,17 @@ class QuestionsController extends AppController {
 					$sql = "SELECT Question.id from questions as Question LEFT JOIN factors_questions ON Question.id = factors_questions.question_id WHERE factor_id IN ($factor_ids)";
 					$question_ids = $this->Question->query($sql);
 					$flatten_qid = array();
+					
+					$this->SelectedFactorLog->query('DELETE FROM selected_factor_logs WHERE user_id = '.$this->request->data['Factors']['user_id']);
+					
+					$to_log_selected_factor = array();
+					foreach($this->request->data['Factors']['factors'] as $key => $factor) {
+						$to_log_selected_factor['SelectedFactorLog']['factor_id'] = $factor;
+						$to_log_selected_factor['SelectedFactorLog']['user_id'] = $this->request->data['Factors']['user_id'];						
+						
+						$this->SelectedFactorLog->create();
+						$this->SelectedFactorLog->save($to_log_selected_factor);
+					}
 					
 					foreach($question_ids as $key => $question_id) {
 						$flatten_qid[$key] = $question_id['Question']['id'];
@@ -368,8 +380,13 @@ class QuestionsController extends AppController {
 					}
 				}
 				
+				// if progress gets completed, then will remove the instances of previous logs so that it will make the questionnaire fresh in view
+					
+					$this->SelectedAnswerLog->query('DELETE FROM selected_answer_logs where user_id = '.$return_user_id);
+					$this->SelectedFactorLog->query('DELETE FROM selected_factor_logs WHERE user_id = '.$this->request->data['Factors']['user_id']);
 				
-				$this->SelectedAnswerLog->query('DELETE FROM selected_answer_logs where user_id = '.$return_user_id);				
+				/*----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+				
 				return $this->redirect(array('controller' => 'users', 'action' => 'dashboard'));
 			}
 		}
@@ -419,6 +436,18 @@ class QuestionsController extends AppController {
 			$this->set('return_progress', $return_progress);
 			
 		/* -------------------------------------------------------------------- ALLOWING THE USER TO GO BACK TO THEIR PREVIOUOS PROGRESS ------------------------------------------------------------ */
+		
+		
+		$selected_factors = $this->SelectedFactorLog->find('all', array('conditions' => array('SelectedFactorLog.user_id' => $return_user_id), 'fields' => array('factor_id')));
+		
+		if(!empty($selected_factors)) {
+			$flatten_selected_factors = array();
+			foreach($selected_factors as $selected_factor_key => $factor) {
+				$flatten_selected_factors[$selected_factor_key] = $factor['SelectedFactorLog']['factor_id'];
+			}
+			
+			$selected_factors = $flatten_selected_factors;
+		}
 		
 		$this->set('selected_factors', $selected_factors);
 		$this->set('method', $method);

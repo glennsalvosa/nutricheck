@@ -18,6 +18,7 @@
 			<div class="left">
 				<form style="min-width: 680px;" method="POST">
 					<label style="float: left; margin-right: 20px; padding-top: 10px;">Select Functional Disturbance:</label>			
+					<input type="hidden" name="data[Factors][user_id]"  value="<?php echo $user_id; ?>">
 					<?php echo $this->Form->input('Factors.factor', array('name' => 'data[Factors][factors]', 'data-placeholder' => 'select factors here...', 'class' => 'chosen-select', 'style' => 'width: 350px;', 'options' => $factors, 'multiple' => 'multiple', 'label' => false, 'div' => false, 'selected' => $selected_factors)); ?>
 					<input type="submit" class="btn btn-success" value="GO" name="data[Factors][submit]">
 				</form>
