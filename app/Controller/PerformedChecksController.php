@@ -136,8 +136,8 @@ class PerformedChecksController extends AppController {
 			
 			$email = $user_info['User']['email'];
 			
-			$result = $this->send($email, $name);
-			pr($result);
+			// $result = $this->send($email, $name);
+			// pr($result);
 		}
 		
 		exit();
